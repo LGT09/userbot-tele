@@ -1,0 +1,22 @@
+{
+  "name": "mbuttt",
+  "version": "1.1.0",
+  "description": "A Telegram userbot with multimedia and admin features",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Trashcore",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "latest",
+    "chalk": "^4.1.2",
+    "input": "latest",
+    "node-fetch": "^2.6.7",
+    "os": "^0.1.2",
+    "perf_hooks": "latest",
+    "telegram": "latest",
+    "fluent-ffmpeg": "^2.1.2",
+    "fs-extra": "^11.1.1"
+  }
+}
