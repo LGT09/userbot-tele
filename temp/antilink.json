@@ -1,0 +1,10 @@
+{
+  "groups": {
+    "123456789": {
+      "enabled": true
+    },
+    "987654321": {
+      "enabled": false
+    }
+  }
+}

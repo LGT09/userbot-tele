@@ -1,0 +1,12 @@
+{
+  "123456789": {
+    "1111111": {
+      "username": "@user1",
+      "messages": 15
+    },
+    "2222222": {
+      "username": "@user2",
+      "messages": 7
+    }
+  }
+}
