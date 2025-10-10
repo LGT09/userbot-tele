@@ -22,7 +22,7 @@ module.exports = {
             const userId = user.id;
             const runtime = formatRuntime(performance.now() - botStartTime);
 
-            const caption = `Hi , I am an automated Telegram bot (Userbot) created by @trashcoredev to help you search, download, and manage content directly from Telegram.
+            const caption = `👋 Hi ${mention}, I am an automated Telegram bot (Userbot) created by @trashcoredev.
 
 📌 Information:
  ▢ Creator: Trashcore
@@ -54,11 +54,20 @@ module.exports = {
  ▢ ping
  ▢ uptime
  ▢ fancy
+ ▢ tts
+ ▢ time
+ ▢ info
 
 🖥️ Admin / Group Commands:
  ▢ promote
  ▢ demote
  ▢ admin
+ ▢ delowner
+ ▢ addowner
+ ▢ listplugin 
+ ▢ getplugin
+ ▢ addplugin
+ ▢ removeplugin
 
 💻 Panel / CPanel Commands:
  ▢ 1gb-unli
