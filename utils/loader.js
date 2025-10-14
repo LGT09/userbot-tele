@@ -1,30 +1,78 @@
 const fs = require("fs");
 const path = require("path");
 const chalk = require("chalk");
+const chokidar = require("chokidar");
 const config = require("../config");
 
 module.exports = (client) => {
     const pluginsPath = path.join(__dirname, "../plugins");
-    const pluginFiles = fs.readdirSync(pluginsPath).filter(file => file.endsWith(".js"));
-    const commands = {};
+    let commands = {};
 
-    pluginFiles.forEach(file => {
-        const plugin = require(path.join(pluginsPath, file));
-        if (typeof plugin === "function") {
-            console.error(`❌ Plugin ${file} does not have the correct format!`);
-            return;
+    // Helper to load a single plugin
+    const loadPlugin = (file) => {
+        const pluginPath = path.join(pluginsPath, file);
+
+        try {
+            delete require.cache[require.resolve(pluginPath)];
+            const plugin = require(pluginPath);
+
+            if (!plugin || typeof plugin.run !== "function") {
+                console.error(chalk.red(`❌ Plugin ${file} has no valid "run" function.`));
+                return;
+            }
+
+            if (!plugin.command || !Array.isArray(plugin.command)) {
+                console.error(chalk.red(`❌ Plugin ${file} missing "command" array.`));
+                return;
+            }
+
+            plugin.command.forEach(cmd => {
+                commands[cmd] = plugin;
+            });
+
+            console.log(chalk.green(`✅ Loaded plugin: ${file}`));
+        } catch (err) {
+            console.error(chalk.red(`❌ Failed to load plugin ${file}:`), err);
         }
+    };
 
-        if (!plugin.command) {
-            console.error(`❌ Plugin ${file} does not have 'command'.`);
-            return;
+    // Helper to unload plugin
+    const unloadPlugin = (file) => {
+        const pluginPath = path.join(pluginsPath, file);
+        try {
+            delete require.cache[require.resolve(pluginPath)];
+            Object.keys(commands).forEach(cmd => {
+                if (commands[cmd].file === file) delete commands[cmd];
+            });
+            console.log(chalk.red(`🗑️ Unloaded plugin: ${file}`));
+        } catch (err) {
+            console.error(chalk.red(`⚠️ Failed to unload ${file}:`), err);
         }
+    };
 
-        plugin.command.forEach(cmd => {
-            commands[cmd] = plugin;
+    // Initial load
+    fs.readdirSync(pluginsPath)
+        .filter(file => file.endsWith(".js"))
+        .forEach(loadPlugin);
+
+    // Watch for plugin updates
+    const watcher = chokidar.watch(pluginsPath, { ignoreInitial: true });
+
+    watcher
+        .on("change", filePath => {
+            const file = path.basename(filePath);
+            console.log(chalk.yellow(`🔁 Plugin updated: ${file}`));
+            loadPlugin(file);
+        })
+        .on("add", filePath => {
+            const file = path.basename(filePath);
+            console.log(chalk.green(`🆕 New plugin added: ${file}`));
+            loadPlugin(file);
+        })
+        .on("unlink", filePath => {
+            const file = path.basename(filePath);
+            unloadPlugin(file);
         });
-        console.log(`✅ Plugin ${file} loaded.`);
-    });
 
     // Load self mode
     const selfFile = path.resolve(__dirname, "../temp/selfMode.json");
@@ -33,7 +81,7 @@ module.exports = (client) => {
         selfMode = JSON.parse(fs.readFileSync(selfFile, "utf8"));
     }
 
-    // Send startup notice to owner
+    // Notify owner
     client.sendMessage(config.ownerId, {
         message: `🤖 Bot started.\nSelf mode: ${selfMode.enabled ? "ENABLED" : "DISABLED"}`
     }).catch(() => {});
@@ -45,12 +93,12 @@ module.exports = (client) => {
         const senderId = message.senderId || "Unknown";
         const chatId = message.peerId;
 
-        // Reload self mode in real-time
+        // Refresh self mode on every message
         if (fs.existsSync(selfFile)) {
             selfMode = JSON.parse(fs.readFileSync(selfFile, "utf8"));
         }
 
-        // Self mode: ignore messages from anyone except owner
+        // Self mode = ignore all except owner
         if (selfMode.enabled && parseInt(senderId) !== parseInt(config.ownerId)) return;
 
         console.log(chalk.bgHex("#e74c3c").bold(`▢ New Message`));
@@ -63,9 +111,9 @@ module.exports = (client) => {
         );
         console.log();
 
-        let args = message.message.trim().split(/\s+/);
-        let command = args.shift().toLowerCase();
-        let text = args.join(".");
+        const args = message.message.trim().split(/\s+/);
+        const command = args.shift().toLowerCase();
+        const text = args.join(" ");
 
         const handler = commands[command];
         if (!handler) return;
@@ -78,27 +126,31 @@ module.exports = (client) => {
             });
         }
 
-        // Handle Self/Public mode toggle notifications
-        if (command === "self" || command === "owneronly") {
+        // Handle mode notifications
+        if (["self", "owneronly"].includes(command)) {
             await client.sendMessage(config.ownerId, {
-                message: `⚠️ Self mode has been ENABLED by owner. Bot will now respond ONLY to the owner.`
+                message: `⚠️ Self mode ENABLED — bot responds only to owner.`
             }).catch(() => {});
-        } else if (command === "public" || command === "allusers") {
+        } else if (["public", "allusers"].includes(command)) {
             await client.sendMessage(config.ownerId, {
-                message: `✅ Public mode has been ENABLED by owner. Bot will respond to everyone again.`
+                message: `✅ Public mode ENABLED — bot responds to everyone.`
             }).catch(() => {});
         }
 
-        await handler.run({
-            client,
-            text,
-            reply: (msg) => client.sendMessage(chatId, { 
-                message: msg, 
-                replyTo: message.id 
-            }),
-            message,
-            senderId,
-            isAdmins: message.isGroup ? message.isGroupAdmin : false
-        });
+        try {
+            await handler.run({
+                client,
+                text,
+                reply: (msg) => client.sendMessage(chatId, { message: msg, replyTo: message.id }),
+                message,
+                senderId,
+                isAdmins: message.isGroup ? message.isGroupAdmin : false
+            });
+        } catch (err) {
+            console.error(chalk.red(`⚠️ Error in ${command}:`), err);
+            client.sendMessage(chatId, { message: "❌ Command execution failed.", replyTo: message.id });
+        }
     });
+
+    console.log(chalk.cyan("👀 Watching for plugin updates..."));
 };
