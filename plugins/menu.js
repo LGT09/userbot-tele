@@ -28,7 +28,7 @@ module.exports = {
  ▢ Creator: Trashcore
  ▢ Runtime: ${runtime}
  ▢ Telegram ID: ${userId}
- ▢ Version: 1.1.0
+ ▢ Version: 1.2.0
  ▢ Type: Userbot
  ▢ Language: JavaScript
 
@@ -41,7 +41,7 @@ module.exports = {
  ▢ tiktok
  ▢ Instagram
  ▢ yta
- ▢ ytv
+ ▢ ytvideo 
  ▢ tagall
  ▢ add
  ▢ remove
@@ -57,6 +57,7 @@ module.exports = {
  ▢ tts
  ▢ time
  ▢ info
+ ▢ ai
 
 🖥️ Admin / Group Commands:
  ▢ promote
@@ -77,10 +78,11 @@ module.exports = {
  ▢ gethtml 
  ▢ gitclone 
  ▢ toaudio 
- ▢ tovideo `;
+ ▢ tovideo 
+`;
 
             await client.sendFile(message.chatId, {
-                file: "https://files.catbox.moe/cpzd4i.jpg",
+                file: "https://files.catbox.moe/oda45a.mp4",
                 caption: caption,
                 replyTo: message.id,
             });

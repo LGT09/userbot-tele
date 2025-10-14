@@ -1,37 +1,49 @@
-const config = require("../config");
-
 module.exports = {
     command: ["tagall"],
-    owner: true, // Optional: set to true if only owner can use
-    run: async ({ client, message, reply }) => {
+    help: ["tagall <optional message>"],
+    tags: ["group"],
+
+    run: async ({ client, text, reply, message, senderId }) => {
         try {
-            // Get participants in the chat
+            if (!message.isGroup) return reply("❌ This command works only in groups!");
+
+            // Fetch participants
             const participants = await client.getParticipants(message.peerId);
-            if (!participants || participants.length === 0) {
-                return reply("❌ No participants found in this group.");
+            
+            // Check admin privilege
+            const admins = participants.filter(p => p.isAdmin || p.isCreator).map(p => p.id);
+            if (senderId !== parseInt(process.env.OWNER_ID) && !admins.includes(senderId)) {
+                return reply("❌ Only admins can use this command!");
             }
+
+            // Optional message
+            const msgText = text || "⚡ Tagging members...";
+            
+            // Limit to 400 participants max
+            const membersToTag = participants.slice(0, 400).filter(u => !u.isBot);
 
             // Prepare mentions
-            let mentionsText = "";
-            for (let user of participants) {
-                if (user.id === message.senderId) continue; // Skip the sender
-                let username = user.username ? `@${user.username}` : `${user.firstName || "User"}`;
-                mentionsText += `${username} `;
+            const mentionChunks = [];
+            const batchSize = 30; // mentions per message
+            for (let i = 0; i < membersToTag.length; i += batchSize) {
+                const batch = membersToTag.slice(i, i + batchSize);
+                const mentions = batch.map(u => `[${u.firstName}](tg://user?id=${u.id})`).join(" ");
+                mentionChunks.push(mentions);
             }
 
-            if (!mentionsText) {
-                return reply("❌ No other users to tag.");
+            // Send messages
+            for (const chunk of mentionChunks) {
+                await client.sendMessage(message.peerId, {
+                    message: `👥 **Tag All by Admin**\n\n💬 Message: ${msgText}\n\n${chunk}`,
+                    parseMode: "Markdown",
+                    replyTo: message.id,
+                    linkPreview: false
+                });
             }
 
-            // Send message with all mentions
-            await client.sendMessage(message.peerId, {
-                message: mentionsText.trim(),
-                replyTo: message.id
-            });
-
-        } catch (error) {
-            console.error("Error in tagall.js:", error);
-            reply("❌ Failed to tag all users.");
+        } catch (err) {
+            console.error("TagAll command error:", err);
+            reply("❌ Something went wrong while tagging members.");
         }
-    },
+    }
 };
