@@ -1,8 +1,8 @@
 
  
 module.exports = {
-    apiId: 1234567, // your Telegram api_id
-    apiHash: "your_api_hash",
+    apiId: 8456978693, // your Telegram api_id
+    apiHash: "8456978693:AAGwEnVcdzqwzVOR5wAohRXBy7_iz9m8JxU",
     sessionFile: "session.json",
     ownerId: 1234567890, // your Telegram user id
 
